@@ -1,0 +1,105 @@
+---
+title: "ClassificationModels1"
+author: "Antonio Oss Boll"
+date: "2022-12-14"
+output: html_document
+---
+
+#Hello!
+
+In this first repository i`ll make some markdowns using classification models. The first one will be the Naive Bayes.
+
+#Inicializing with some libraries for the fist list.
+
+```{r bancos}
+library(Rcpp)
+library(e1071)
+library(caTools)
+library(caret)
+library(MASS)
+library(mda)
+```
+
+## Classification
+
+Using the Wine database, I start renaming the columns (that have V1, etc) to the real names that they hold, such as the Alcalinity or the Magnesium. 
+Since i`m classificating by type (that is a factor), I change the wine$Type to a factor, using the as.factor function.  
+```{r csv}
+wine <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine/wine.data", header=FALSE)
+colnames(wine) <- c('Type', 'Alcohol', 'Malic', 'Ash', 'Alcalinity', 'Magnesium',
+                    'Phenols', 'Flavanoids', 'Nonflavanoids', 'Proanthocyanins', 'Color', 'Hue', 'Dilution', 'Proline')
+wine$Type <- as.factor(wine$Type)
+
+```
+
+With classification models we always divide the database with a 80% to the training of the model and 20% to the validation of the model. In this chunk I make this separation, using a seed to always get the same results (in this case the seed is 30), the sample.split function to separate 80% of the database, 
+
+```{r dados}
+set.seed(30)
+amostra = sample.split(wine, SplitRatio = 0.8)
+treinamento = subset(wine, amostra == "TRUE")
+predicao = subset(wine, amostra == "FALSE")
+summary(treinamento)
+summary(predicao)
+
+```
+
+Para a escolha dos metodos, resolvi aplicar o Naive Bayes e o Discriminante Linear.
+
+## Naive Bayes
+
+Classificando a partir de Type, realizo a chamada do modelo de Naive Bayes. Aplico com o banco de treinamento.
+As probabilidades, como citadas no enunciado, nao serao iguais, dado que Type nao esta balanceado.
+No modelo, podemos ver as medias preditas de cada variavel para cada tipo.
+```{r nb}
+nb = naiveBayes(Type ~ ., data = treinamento)
+nb
+```
+
+Apos o modelo esta pronto, realizo a predicao com os 20% dos dados.
+```{r pnb}
+predicao_nb = predict(nb, newdata = predicao)
+predicao_nb
+```
+
+Para verificar a acuracia, realizo a chamada da confusion matrix a partir dos valores preditos, podendo assim avaliar o metodo.
+```{r cmnb}
+cm = table(predicao$Type, predicao_nb)
+cm
+confusionMatrix(cm)
+```
+
+Avaliando o Naive Bayes, vejo que houveram 2 erros de predicao, para os grupos 1 e 2. A acuracia final e 0.95, resultado final muito bom.
+
+## Discriminante Linear
+
+Classificando a partir de Type, realizo a chamada do modelo de Naive Bayes. Aplico com o banco de treinamento.
+No modelo, podemos ver as medias preditas de cada variavel para cada tipo. 
+Alem disso, ha os coeficientes lineares, onde posso visualizar, por cima, os pesos de cada variavel no modelo final e a proporcao do traco, que mostra o peso do discriminante.
+```{r dl}
+dl = lda(Type ~ ., data = treinamento)
+dl
+```
+
+Apos o modelo esta pronto, realizo a predicao com os 20% dos dados.
+```{r pdl}
+predicao_dl = predict(dl, newdata = predicao)
+predicao_dl
+```
+
+Para verificar a acuracia, realizo a chamada da confusion matrix a partir dos valores preditos, podendo assim avaliar o metodo.
+```{r cmdl}
+cm = table(predicao$Type, predicao_dl$class)
+cm
+confusionMatrix(cm)
+```
+
+Avaliando o Discriminante Linear, vejo que nao houveram erros de predicao. A acuracia final é 1, resultado final perfeito.
+
+## Conclusoes
+
+Concluindo sobre os dois metodos, observo que o Discriminante é melhor neste caso. Acredito que isso seja porque o Naive Bayes assume que as variaveis sao independentes. Essa suposicao pode ser balanceada com a melhor perfomace do metodo em bancos pequenos, resultando em uma acuracia bem alta.
+
+
+Acredito que para a conclusao, nao posso pensar em muitas diferencas entre os modelos. As acuracias sao bem altas em ambos, com seeds diferentes posso chegar em resultados em que Naive Bayes é melhor, pior ou ambos com acuracia 1.
+Por serem modelos muito similares, a conclusao final é que qualquer método poderia ser utilizado para obter a melhor acuracia. Depende mesmo da seed utilizada.
